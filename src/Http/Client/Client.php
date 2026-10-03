@@ -5,47 +5,59 @@ declare(strict_types=1);
 namespace CheckVin\Api\Http\Client;
 
 use CheckVin\Api\Config\Config;
+use CheckVin\Api\Exception\RequestFailed;
 use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
 use CheckVin\Api\Http\Response\ClientResponse;
 use CheckVin\Api\Http\Response\Error\ApplicationErrorResponse;
 use CheckVin\Api\Http\Response\Success\ApplicationSuccessResponse;
 
-class Client implements ClientInterface
+final class Client implements ClientInterface
 {
-    private Config $config;
-    
-    public function __construct(Config $config)
+    public function __construct(private readonly Config $config)
     {
-        $this->config = $config;
     }
-    
+
     public function request(string $path, array $params): ClientResponse
     {
         $curl = curl_init();
+
         curl_setopt($curl, CURLOPT_URL, $this->buildRequestUrl($path, $params));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    
-        $output = curl_exec($curl);
-        if (curl_errno($curl)) {
-            curl_close($curl);
-            throw new \LogicException('Request failed. Message: '. curl_error($curl));
-        }
-    
-        $response = new ClientResponse(json_decode($output, true), curl_getinfo($curl)['http_code']);
-        curl_close($curl);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->config->getConnectTimeoutMs());
+        curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->config->getTimeoutMs());
 
-        return $response;
+        $output = curl_exec($curl);
+
+        if ($output === false) {
+            $errno = curl_errno($curl);
+            $error = curl_error($curl);
+            // CurlHandle freed when it goes out of scope; curl_close() deprecated since PHP 8.5
+            throw new RequestFailed(
+                sprintf('Request failed (errno %d): %s', $errno, $error),
+                $errno,
+            );
+        }
+
+        $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        $decoded = json_decode($output, true);
+
+        if (!is_array($decoded)) {
+            return new ClientResponse(['message' => 'Malformed response body'], 0);
+        }
+
+        return new ClientResponse($decoded, $httpCode);
     }
-    
+
     public function makeResponse(ClientResponse $clientResponse): ApiResponse
     {
         if ($clientResponse->getResponseHttpCode() !== ApplicationSuccessResponse::SUCCESS_CODE) {
             return new ApplicationErrorResponse($clientResponse);
         }
-        
+
         return new ApplicationSuccessResponse($clientResponse);
     }
-    
+
     private function buildRequestUrl(string $path, array $params): string
     {
         return $this->config->getHost() . $path . '?' . http_build_query($params);

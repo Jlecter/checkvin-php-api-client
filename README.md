@@ -8,6 +8,7 @@ CONTENTS OF THIS FILE
  * Key packages / extensions
  * Installation
  * Usage
+ * Upgrading from 0.x
  
   UPDATES
 ------------
@@ -15,6 +16,7 @@ CONTENTS OF THIS FILE
 - **17.03.2023** - published version (<b>v0.1.0</b>) - added an ability to work with AutoCheck, Balance, Carfax.
 - **16.08.2023** - published version (<b>v0.2.0</b>) - fixed curl close bug.
 - **21.01.2024** - published version (<b>v0.3.0</b>) - added VehicleProvider.
+- **2026-10-03** - published version (<b>v1.0.0</b>) - PHP 8.1+, configurable timeouts, client injection, malformed-body safety, dedicated exception, full test suite. See **Upgrading from 0.x** for breaking changes.
  
   DESCRIPTION
 ------------
@@ -24,7 +26,7 @@ CheckVin API client is a package for a convenient working with <a href="https://
   KEY PACKAGES / EXTENSIONS
 ------------
 
-* php
+* php >= 8.1
 * ext-curl
 * ext-json
 
@@ -48,3 +50,82 @@ Run: composer require jlecter/checkvin-php-api-client
 - "isSuccess" (returns true/false depends on response)
 - "getData" (returns empty array while error response)
 - "getError" (returns object while error response, null while success)
+
+**Basic usage (default host and timeouts):**
+
+```php
+use CheckVin\Api\Provider\Autocheck\AutocheckDataProvider;
+
+$provider = new AutocheckDataProvider('your-api-key');
+$response = $provider->checkReportExists('1HGBH41JXMN109186');
+
+if ($response->isSuccess()) {
+    var_dump($response->getData());
+} else {
+    echo $response->getError()->getMessage();
+}
+```
+
+**Custom host and timeouts:**
+
+```php
+use CheckVin\Api\Config\Config;
+use CheckVin\Api\Http\Client\Client;
+use CheckVin\Api\Provider\Autocheck\AutocheckDataProvider;
+
+$config = new Config(
+    host: 'https://apicheckvin.xyz',
+    connectTimeoutMs: 1000,   // 1 s connect timeout
+    timeoutMs: 5000,          // 5 s total timeout
+);
+$client = new Client($config);
+
+$provider = new AutocheckDataProvider('your-api-key', $client);
+```
+
+**Catching transport failures:**
+
+```php
+use CheckVin\Api\Exception\RequestFailed;
+
+try {
+    $response = $provider->checkReportExists('VIN123');
+} catch (RequestFailed $e) {
+    // curl transport error or timeout
+    echo $e->getMessage(); // "Request failed (errno N): ..."
+}
+```
+
+ UPGRADING FROM 0.x
+------------
+
+v1.0.0 introduces the following **breaking changes**:
+
+1. **PHP >= 8.1 required.** PHP 7.4 and 8.0 are no longer supported.
+
+2. **`Config` constructor is now public and configurable.**
+   Old: `new Config()` — no parameters.
+   New: `new Config(string $host, int $connectTimeoutMs, int $timeoutMs)` — all optional with defaults.
+   `Config` is now `final`.
+
+3. **All four providers accept an optional `ClientInterface` as second constructor argument.**
+   Old: `new AutocheckDataProvider('key')`.
+   New: `new AutocheckDataProvider('key', ?ClientInterface $client = null)`.
+   Existing call sites continue to work unchanged.
+
+4. **`VehicleDataProvider::getInfo()` now requires a `$vinCode` argument.**
+   Old (broken — caused a fatal `ArgumentCountError` at runtime): `$provider->getInfo()`.
+   New: `$provider->getInfo(string $vinCode): ApiResponse`.
+   The matching interface `VehicleDataProviderInterface` is updated accordingly.
+
+5. **Malformed / non-JSON response bodies no longer cause a `TypeError`.**
+   Old: a curl response that is not a JSON object (HTML error page, empty body, truncated response) caused a `TypeError` (null passed to array parameter) even on HTTP 200.
+   New: those cases return an error `ApiResponse` (`isSuccess() === false`) with the message `"Malformed response body"`.
+
+6. **`\LogicException` replaced by `CheckVin\Api\Exception\RequestFailed`.**
+   Old: curl transport errors threw `\LogicException`.
+   New: they throw `CheckVin\Api\Exception\RequestFailed` (extends `\RuntimeException`, implements `CheckVin\Api\Exception\CheckVinApiException`). Update any `catch (\LogicException $e)` blocks.
+
+7. **Most concrete classes are now `final`.**
+   The following classes cannot be extended: `Config`, `Client`, `ClientResponse`, `Error`, `ApplicationErrorResponse`, `ApplicationSuccessResponse`, `ApiUriGlossary`, `AutocheckDataProvider`, `BalanceDataProvider`, `CarfaxDataProvider`, `VehicleDataProvider`.
+   If you were extending any of these, compose instead.

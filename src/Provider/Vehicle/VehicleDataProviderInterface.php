@@ -8,5 +8,5 @@ use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
 
 interface VehicleDataProviderInterface
 {
-    public function getInfo(): ApiResponse;
+    public function getInfo(string $vinCode): ApiResponse;
 }
