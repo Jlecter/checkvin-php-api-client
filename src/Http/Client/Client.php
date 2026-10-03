@@ -40,13 +40,7 @@ final class Client implements ClientInterface
 
         $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        $decoded = json_decode($output, true);
-
-        if (!is_array($decoded)) {
-            return new ClientResponse(['message' => 'Malformed response body'], 0);
-        }
-
-        return new ClientResponse($decoded, $httpCode);
+        return ClientResponse::fromBody($output, $httpCode);
     }
 
     public function makeResponse(ClientResponse $clientResponse): ApiResponse

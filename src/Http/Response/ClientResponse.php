@@ -12,6 +12,17 @@ final class ClientResponse
     ) {
     }
 
+    public static function fromBody(string $body, int $httpCode): self
+    {
+        $decoded = json_decode($body, true);
+
+        if (!is_array($decoded)) {
+            return new self(['message' => 'Malformed response body'], 0);
+        }
+
+        return new self($decoded, $httpCode);
+    }
+
     public function getData(): array
     {
         return $this->data;
