@@ -27,6 +27,10 @@ final class Config
             throw new InvalidConfig('timeoutMs must be greater than 0');
         }
 
+        if ($timeoutMs < $connectTimeoutMs) {
+            throw new InvalidConfig('timeoutMs must be greater than or equal to connectTimeoutMs');
+        }
+
         $this->host = rtrim($host, '/');
         $this->connectTimeoutMs = $connectTimeoutMs;
         $this->timeoutMs = $timeoutMs;

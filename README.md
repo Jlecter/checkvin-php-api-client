@@ -229,6 +229,7 @@ v1.0.0 introduces the following **breaking changes**:
    Default timeouts changed: connect timeout is now **10 000 ms** (10 s), total timeout is now **60 000 ms** (60 s). Previously there was no total timeout and the curl default connect timeout applied.
    A trailing slash on `$host` is silently trimmed, so `https://host/` and `https://host` behave identically.
    `connectTimeoutMs <= 0` or `timeoutMs <= 0` throws `CheckVin\Api\Exception\InvalidConfig` (extends `\InvalidArgumentException`).
+   `timeoutMs < connectTimeoutMs` also throws `InvalidConfig` — a total timeout shorter than the connect timeout would make the connect timeout unreachable.
 
 3. **All four providers accept an optional `ClientInterface` as second constructor argument.**
    Old: `new AutocheckDataProvider('key')`.

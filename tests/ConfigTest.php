@@ -99,4 +99,33 @@ final class ConfigTest extends TestCase
         // Action
         new Config(connectTimeoutMs: 0);
     }
+
+    public function testTimeoutSmallerThanConnectTimeoutThrowsInvalidConfig(): void
+    {
+        // Assert
+        $this->expectException(InvalidConfig::class);
+
+        // Action — total timeout shorter than connect timeout makes connect timeout meaningless
+        new Config(connectTimeoutMs: 5000, timeoutMs: 300);
+    }
+
+    public function testEqualTimeoutsAreAllowed(): void
+    {
+        // Arrange + Action — equal values are explicitly permitted
+        $config = new Config(connectTimeoutMs: 1000, timeoutMs: 1000);
+
+        // Assert
+        self::assertSame(1000, $config->getConnectTimeoutMs());
+        self::assertSame(1000, $config->getTimeoutMs());
+    }
+
+    public function testTimeoutGreaterThanConnectTimeoutIsAllowed(): void
+    {
+        // Arrange + Action
+        $config = new Config(connectTimeoutMs: 1000, timeoutMs: 5000);
+
+        // Assert
+        self::assertSame(1000, $config->getConnectTimeoutMs());
+        self::assertSame(5000, $config->getTimeoutMs());
+    }
 }

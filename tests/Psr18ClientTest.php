@@ -11,6 +11,7 @@ use CheckVin\Api\Http\Client\Psr18Client;
 use CheckVin\Api\Provider\Balance\BalanceDataProvider;
 use CheckVin\Api\Tests\Doubles\FakeClientException;
 use CheckVin\Api\Tests\Doubles\FakePsr18Client;
+use CheckVin\Api\Tests\Doubles\FakeResponseWithThrowingBody;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use PHPUnit\Framework\TestCase;
@@ -205,5 +206,34 @@ final class Psr18ClientTest extends TestCase
         // Action + Assert
         $this->expectException(RequestFailed::class);
         $provider->getBalance();
+    }
+
+    public function testThrowingBodyStreamIsWrappedInRequestFailed(): void
+    {
+        // Arrange
+        $this->fakeHttp->stubResponse(new FakeResponseWithThrowingBody(200));
+
+        // Action + Assert
+        $this->expectException(RequestFailed::class);
+        $this->client->request('/path', []);
+    }
+
+    public function testThrowingBodyStreamPreviousExceptionIsPreserved(): void
+    {
+        // Arrange
+        $this->fakeHttp->stubResponse(new FakeResponseWithThrowingBody(200));
+
+        // Action
+        $caught = null;
+        try {
+            $this->client->request('/path', []);
+        } catch (RequestFailed $e) {
+            $caught = $e;
+        }
+
+        // Assert
+        self::assertNotNull($caught);
+        self::assertInstanceOf(\RuntimeException::class, $caught->getPrevious());
+        self::assertSame('Stream is detached', $caught->getPrevious()->getMessage());
     }
 }

@@ -50,8 +50,8 @@ final class ClientIntegrationTest extends TestCase
 
     public function testSlowEndpointThrowsRequestFailed(): void
     {
-        // Arrange — 300 ms timeout, server sleeps 1 s
-        $client = new Client(new Config($this->baseUrl(), timeoutMs: 300));
+        // Arrange — 300 ms total timeout, server sleeps 1 s; connect timeout must be ≤ total
+        $client = new Client(new Config($this->baseUrl(), connectTimeoutMs: 100, timeoutMs: 300));
 
         // Action + Assert
         $this->expectException(RequestFailed::class);

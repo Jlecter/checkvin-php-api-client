@@ -41,6 +41,12 @@ final class Psr18Client implements ClientInterface
             throw new RequestFailed($e->getMessage(), (int) $e->getCode(), $e);
         }
 
-        return ClientResponse::fromBody((string) $response->getBody(), $response->getStatusCode());
+        try {
+            $body = (string) $response->getBody();
+        } catch (\RuntimeException $e) {
+            throw new RequestFailed('Failed to read response body: ' . $e->getMessage(), (int) $e->getCode(), $e);
+        }
+
+        return ClientResponse::fromBody($body, $response->getStatusCode());
     }
 }

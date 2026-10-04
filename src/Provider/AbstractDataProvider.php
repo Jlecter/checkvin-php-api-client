@@ -18,7 +18,7 @@ abstract class AbstractDataProvider
 
     private readonly ClientInterface $client;
 
-    public function __construct(private readonly string $apiKey, ?ClientInterface $client = null)
+    public function __construct(#[\SensitiveParameter] private readonly string $apiKey, ?ClientInterface $client = null)
     {
         $this->client = $client ?? new Client(new Config());
     }
