@@ -7,6 +7,7 @@ namespace CheckVin\Api\Tests\Integration;
 use CheckVin\Api\Config\Config;
 use CheckVin\Api\Exception\RequestFailed;
 use CheckVin\Api\Http\Client\Client;
+use CheckVin\Api\Http\Response\ApiResponseFactory;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
@@ -64,7 +65,7 @@ final class ClientIntegrationTest extends TestCase
 
         // Action
         $raw = $client->request('/200-json', []);
-        $response = $client->makeResponse($raw);
+        $response = ApiResponseFactory::fromClientResponse($raw);
 
         // Assert
         self::assertTrue($response->isSuccess());
