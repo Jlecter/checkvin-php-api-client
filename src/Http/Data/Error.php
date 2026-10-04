@@ -22,7 +22,7 @@ final class Error
         $errors = is_array($data['errors'] ?? null) ? $data['errors'] : [];
 
         return new self(
-            self::buildMessage($data),
+            self::buildMessage($data['message'] ?? null, $errors),
             $clientResponse->getResponseHttpCode(),
             $errors,
             !$clientResponse->hasValidBody(),
@@ -49,24 +49,25 @@ final class Error
         return $this->malformedBody;
     }
 
-    private static function buildMessage(array $data): string
+    private static function buildMessage(mixed $message, array $errors): string
     {
         $parts = [];
 
-        $raw = $data['message'] ?? null;
-
-        if ((is_string($raw) && $raw !== '') || is_int($raw) || is_float($raw)) {
-            $parts[] = (string) $raw;
+        if (self::isPrintableScalar($message)) {
+            $parts[] = (string) $message;
         }
 
-        if (is_array($data['errors'] ?? null)) {
-            array_walk_recursive($data['errors'], function (mixed $value) use (&$parts): void {
-                if ((is_string($value) && $value !== '') || is_int($value) || is_float($value)) {
-                    $parts[] = (string) $value;
-                }
-            });
-        }
+        array_walk_recursive($errors, function (mixed $value) use (&$parts): void {
+            if (self::isPrintableScalar($value)) {
+                $parts[] = (string) $value;
+            }
+        });
 
         return implode(' ', $parts);
+    }
+
+    private static function isPrintableScalar(mixed $value): bool
+    {
+        return (is_string($value) && $value !== '') || is_int($value) || is_float($value);
     }
 }
