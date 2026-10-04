@@ -11,7 +11,6 @@ final class ApiResponse
     private const SUCCESS_CODE = 200;
 
     private function __construct(
-        private readonly bool $success,
         private readonly ?Error $error,
         private readonly array $data,
     ) {
@@ -20,15 +19,15 @@ final class ApiResponse
     public static function fromClientResponse(ClientResponse $clientResponse): self
     {
         if ($clientResponse->getResponseHttpCode() !== self::SUCCESS_CODE || !$clientResponse->hasValidBody()) {
-            return new self(false, Error::fromClientResponse($clientResponse), []);
+            return new self(Error::fromClientResponse($clientResponse), []);
         }
 
-        return new self(true, null, $clientResponse->getData());
+        return new self(null, $clientResponse->getData());
     }
 
     public function isSuccess(): bool
     {
-        return $this->success;
+        return $this->error === null;
     }
 
     public function getError(): ?Error
