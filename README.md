@@ -16,7 +16,7 @@ CONTENTS OF THIS FILE
 - **17.03.2023** - published version (<b>v0.1.0</b>) - added an ability to work with AutoCheck, Balance, Carfax.
 - **16.08.2023** - published version (<b>v0.2.0</b>) - fixed curl close bug.
 - **21.01.2024** - published version (<b>v0.3.0</b>) - added VehicleProvider.
-- **2026-10-03** - published version (<b>v1.0.0</b>) - PHP 8.1+, configurable timeouts, client injection, malformed-body safety, dedicated exception, full test suite. See **Upgrading from 0.x** for breaking changes.
+- **2026-10-03** - published version (<b>v1.0.0</b>) - PHP 8.1+, configurable timeouts, client injection, malformed-body safety, dedicated exception, full test suite, `CheckVin` facade entry-point. See **Upgrading from 0.x** for breaking changes.
  
   DESCRIPTION
 ------------
@@ -81,13 +81,18 @@ try {
 
 **Note:** only North-American VINs (with a valid check digit) are accepted. Non-North-American VINs (European, Asian, etc.) will be rejected at this stage.
 
-**Basic usage (default host and timeouts):**
+**Basic usage — `CheckVin` facade (recommended):**
+
+The `CheckVin` class is the recommended entry-point. It accepts your API key once,
+resolves the HTTP client once, and lazily creates each provider on demand while
+sharing the same client across all of them.
 
 ```php
-use CheckVin\Api\Provider\Autocheck\AutocheckDataProvider;
+use CheckVin\Api\CheckVin;
 
-$provider = new AutocheckDataProvider('your-api-key');
-$response = $provider->checkReportExists('1FM5K7D85HGB31870');
+$checkVin = new CheckVin('your-api-key');
+
+$response = $checkVin->autocheck()->checkReportExists('1FM5K7D85HGB31870');
 
 if ($response->isSuccess()) {
     var_dump($response->getData());
@@ -112,6 +117,27 @@ if ($response->isSuccess()) {
         }
     }
 }
+```
+
+All four providers are available through the facade:
+
+```php
+$checkVin->autocheck()->getAutoCheckForVinCode('1FM5K7D85HGB31870');
+$checkVin->carfax()->getCarfaxForVinCode('1FM5K7D85HGB31870');
+$checkVin->vehicle()->getInfo('1FM5K7D85HGB31870');
+$checkVin->balance()->getBalance();
+```
+
+**Alternative: instantiate providers directly**
+
+You can still create each provider individually when you only need one,
+or when you need different configuration per provider:
+
+```php
+use CheckVin\Api\Provider\Autocheck\AutocheckDataProvider;
+
+$provider = new AutocheckDataProvider('your-api-key');
+$response = $provider->checkReportExists('1FM5K7D85HGB31870');
 ```
 
 **Custom host and timeouts:**
