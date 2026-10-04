@@ -16,7 +16,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['message' => 'Something went wrong'], 400);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('Something went wrong', $error->getMessage());
@@ -31,7 +31,7 @@ final class ErrorTest extends TestCase
         ], 422);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertStringContainsString('Validation failed', $error->getMessage());
@@ -45,7 +45,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse([], 500);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('', $error->getMessage());
@@ -57,7 +57,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['message' => ['nested' => 'array']], 500);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('', $error->getMessage());
@@ -69,7 +69,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['message' => 'Oops', 'errors' => 'not-an-array'], 400);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('Oops', $error->getMessage());
@@ -81,7 +81,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['errors' => ['vin' => ['invalid']]], 422);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('invalid', $error->getMessage());
@@ -95,7 +95,7 @@ final class ErrorTest extends TestCase
         ], 400);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('required', $error->getMessage());
@@ -107,7 +107,7 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['message' => 'Code', 'errors' => ['code' => 42]], 400);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('Code 42', $error->getMessage());
@@ -119,9 +119,82 @@ final class ErrorTest extends TestCase
         $response = new ClientResponse(['errors' => ['field' => '', 'other' => 'required']], 422);
 
         // Action
-        $error = new Error($response);
+        $error = Error::fromClientResponse($response);
 
         // Assert
         self::assertSame('required', $error->getMessage());
+    }
+
+    public function testGetHttpCodeReturnsCodeFromClientResponse(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['message' => 'Unauthorized'], 401);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame(401, $error->getHttpCode());
+    }
+
+    public function testGetErrorsReturnsRawErrorsArray(): void
+    {
+        // Arrange
+        $errorsPayload = ['field' => 'is required', 'email' => 'invalid'];
+        $response      = new ClientResponse(['message' => 'Validation failed', 'errors' => $errorsPayload], 422);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame($errorsPayload, $error->getErrors());
+    }
+
+    public function testGetErrorsReturnsEmptyArrayWhenNoErrorsKey(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['message' => 'Not found'], 404);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame([], $error->getErrors());
+    }
+
+    public function testGetErrorsReturnsEmptyArrayWhenErrorsIsNotAnArray(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['message' => 'Oops', 'errors' => 'not-an-array'], 400);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame([], $error->getErrors());
+    }
+
+    public function testIsMalformedBodyReturnsTrueForInvalidBody(): void
+    {
+        // Arrange
+        $response = ClientResponse::fromBody('not json', 502);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertTrue($error->isMalformedBody());
+    }
+
+    public function testIsMalformedBodyReturnsFalseForValidBody(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['message' => 'Unauthorized'], 401);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertFalse($error->isMalformedBody());
     }
 }

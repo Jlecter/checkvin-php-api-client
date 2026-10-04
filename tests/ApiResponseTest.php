@@ -89,4 +89,30 @@ final class ApiResponseTest extends TestCase
         self::assertTrue($response->isSuccess());
         self::assertNull($response->getError());
     }
+
+    public function testErrorExposesHttpCode(): void
+    {
+        // Arrange
+        $raw = new ClientResponse(['message' => 'Unauthorized'], 401);
+
+        // Action
+        $response = ApiResponse::fromClientResponse($raw);
+
+        // Assert
+        self::assertFalse($response->isSuccess());
+        self::assertSame(401, $response->getError()->getHttpCode());
+    }
+
+    public function testMalformedBodyErrorIsFlagged(): void
+    {
+        // Arrange
+        $raw = ClientResponse::fromBody('not json', 500);
+
+        // Action
+        $response = ApiResponse::fromClientResponse($raw);
+
+        // Assert
+        self::assertFalse($response->isSuccess());
+        self::assertTrue($response->getError()->isMalformedBody());
+    }
 }

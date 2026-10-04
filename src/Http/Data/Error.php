@@ -8,11 +8,25 @@ use CheckVin\Api\Http\Response\ClientResponse;
 
 final class Error
 {
-    private string $message;
+    private function __construct(
+        private readonly string $message,
+        private readonly int $httpCode,
+        private readonly array $errors,
+        private readonly bool $malformedBody,
+    ) {
+    }
 
-    public function __construct(ClientResponse $clientResponse)
+    public static function fromClientResponse(ClientResponse $clientResponse): self
     {
-        $this->message = $this->buildMessage($clientResponse->getData());
+        $data = $clientResponse->getData();
+        $errors = is_array($data['errors'] ?? null) ? $data['errors'] : [];
+
+        return new self(
+            self::buildMessage($data),
+            $clientResponse->getResponseHttpCode(),
+            $errors,
+            !$clientResponse->hasValidBody(),
+        );
     }
 
     public function getMessage(): string
@@ -20,7 +34,22 @@ final class Error
         return $this->message;
     }
 
-    private function buildMessage(array $data): string
+    public function getHttpCode(): int
+    {
+        return $this->httpCode;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    public function isMalformedBody(): bool
+    {
+        return $this->malformedBody;
+    }
+
+    private static function buildMessage(array $data): string
     {
         $parts = [];
 

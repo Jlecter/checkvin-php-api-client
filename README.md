@@ -51,6 +51,12 @@ Run: composer require jlecter/checkvin-php-api-client
 - "getData" (returns empty array while error response)
 - "getError" (returns object while error response, null while success)
 
+**Error object methods (`CheckVin\Api\Http\Data\Error`):**
+- `getMessage(): string` — human-readable message (may include flattened `errors` fields)
+- `getHttpCode(): int` — the real HTTP status code from the response
+- `getErrors(): array` — raw `errors` payload if the API returned an array, otherwise `[]`
+- `isMalformedBody(): bool` — `true` when the response body was not a JSON object (e.g. HTML error page, JSON list, empty body)
+
 **Basic usage (default host and timeouts):**
 
 ```php
@@ -62,7 +68,25 @@ $response = $provider->checkReportExists('1HGBH41JXMN109186');
 if ($response->isSuccess()) {
     var_dump($response->getData());
 } else {
-    echo $response->getError()->getMessage();
+    $error = $response->getError();
+
+    if ($error->isMalformedBody()) {
+        // Transport / gateway problem — no API error payload
+        echo 'Unexpected response, HTTP ' . $error->getHttpCode();
+    } elseif ($error->getHttpCode() === 401) {
+        echo 'Invalid API key';
+    } elseif ($error->getHttpCode() === 404) {
+        echo 'Report not found';
+    } elseif ($error->getHttpCode() === 429) {
+        echo 'Rate limit exceeded';
+    } else {
+        // 422 validation error, 5xx, etc.
+        echo $error->getMessage();
+        // Field-level details if available:
+        foreach ($error->getErrors() as $field => $messages) {
+            echo $field . ': ' . (is_array($messages) ? implode(', ', $messages) : $messages);
+        }
+    }
 }
 ```
 
@@ -124,6 +148,7 @@ v1.0.0 introduces the following **breaking changes**:
 5. **Malformed / non-JSON response bodies no longer cause a `TypeError`.**
    Old: a curl response that is not a JSON object (HTML error page, empty body, truncated response) caused a `TypeError` (null passed to array parameter) even on HTTP 200.
    New: those cases return an error `ApiResponse` (`isSuccess() === false`). The error message now includes the HTTP status, e.g. `"Malformed response body (HTTP 200)"`. A 200 response with a non-JSON body is also treated as an error.
+   **v1.0.0 also treats a JSON list (e.g. `[1,2,3]`) as a malformed body** — the API contract requires a JSON object. Empty arrays (`[]` / `{}`) remain valid.
 
 6. **`\LogicException` replaced by `CheckVin\Api\Exception\RequestFailed`.**
    Old: curl transport errors threw `\LogicException`.

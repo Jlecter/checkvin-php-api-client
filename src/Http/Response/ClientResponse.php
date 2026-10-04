@@ -17,7 +17,10 @@ final class ClientResponse
     {
         $decoded = json_decode($body, true);
 
-        if (!is_array($decoded)) {
+        // The API returns JSON objects; `{}` decodes to [] which is also a list, so keep it valid.
+        $isJsonList = is_array($decoded) && count($decoded) > 0 && array_is_list($decoded);
+
+        if (!is_array($decoded) || $isJsonList) {
             return new self(
                 ['message' => sprintf('Malformed response body (HTTP %d)', $httpCode)],
                 $httpCode,
