@@ -22,17 +22,22 @@ final class Error
 
     private function buildMessage(array $data): string
     {
-        $raw = $data['message'] ?? '';
-        $message = is_scalar($raw) ? (string) $raw : '';
+        $parts = [];
+
+        $raw = $data['message'] ?? null;
+
+        if ((is_string($raw) && $raw !== '') || is_int($raw) || is_float($raw)) {
+            $parts[] = (string) $raw;
+        }
 
         if (is_array($data['errors'] ?? null)) {
-            array_walk_recursive($data['errors'], function (mixed $value) use (&$message): void {
-                if (is_scalar($value)) {
-                    $message .= ' ' . $value;
+            array_walk_recursive($data['errors'], function (mixed $value) use (&$parts): void {
+                if ((is_string($value) && $value !== '') || is_int($value) || is_float($value)) {
+                    $parts[] = (string) $value;
                 }
             });
         }
 
-        return $message;
+        return implode(' ', $parts);
     }
 }

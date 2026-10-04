@@ -74,4 +74,54 @@ final class ErrorTest extends TestCase
         // Assert
         self::assertSame('Oops', $error->getMessage());
     }
+
+    public function testOnlyErrorsWithoutMessageHasNoLeadingSpace(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['errors' => ['vin' => ['invalid']]], 422);
+
+        // Action
+        $error = new Error($response);
+
+        // Assert
+        self::assertSame('invalid', $error->getMessage());
+    }
+
+    public function testBoolsAndNullsInErrorsAreSkipped(): void
+    {
+        // Arrange
+        $response = new ClientResponse([
+            'errors' => ['active' => true, 'deleted' => false, 'key' => null, 'field' => 'required'],
+        ], 400);
+
+        // Action
+        $error = new Error($response);
+
+        // Assert
+        self::assertSame('required', $error->getMessage());
+    }
+
+    public function testIntegerErrorValueIsIncluded(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['message' => 'Code', 'errors' => ['code' => 42]], 400);
+
+        // Action
+        $error = new Error($response);
+
+        // Assert
+        self::assertSame('Code 42', $error->getMessage());
+    }
+
+    public function testEmptyStringInErrorsIsSkipped(): void
+    {
+        // Arrange
+        $response = new ClientResponse(['errors' => ['field' => '', 'other' => 'required']], 422);
+
+        // Action
+        $error = new Error($response);
+
+        // Assert
+        self::assertSame('required', $error->getMessage());
+    }
 }
