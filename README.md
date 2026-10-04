@@ -29,6 +29,7 @@ CheckVin API client is a package for a convenient working with <a href="https://
 * php >= 8.1
 * ext-curl
 * ext-json
+* checkvin/vincode ^1.0
 
  INSTALLATION
 ------------
@@ -57,13 +58,36 @@ Run: composer require jlecter/checkvin-php-api-client
 - `getErrors(): array` — raw `errors` payload if the API returned an array, otherwise `[]`
 - `isMalformedBody(): bool` — `true` when the response body was not a JSON object (e.g. HTML error page, JSON list, empty body)
 
+**VIN validation (client-side, before any HTTP request):**
+
+All VIN-based endpoints validate the supplied VIN before making any HTTP call.
+The VIN is trimmed, stripped of dashes and spaces, uppercased and then checked for:
+- 17-character length (`LengthNotValidException`)
+- Allowed characters — I, O and Q are forbidden (`NotValidLetterException`)
+- North-American check digit at position 9 (`CheckSumNotValidException`)
+
+An invalid VIN throws `CheckVin\Api\Exception\InvalidVinCode` (extends `\InvalidArgumentException`, implements `CheckVinApiException`). The original package exception is available via `getPrevious()`.
+
+```php
+use CheckVin\Api\Exception\InvalidVinCode;
+
+try {
+    $response = $provider->getAutoCheckForVinCode('not-a-vin');
+} catch (InvalidVinCode $e) {
+    echo $e->getMessage(); // reason from checkvin/vincode
+    // $e->getPrevious() is the LengthNotValidException / NotValidLetterException / CheckSumNotValidException
+}
+```
+
+**Note:** only North-American VINs (with a valid check digit) are accepted. Non-North-American VINs (European, Asian, etc.) will be rejected at this stage.
+
 **Basic usage (default host and timeouts):**
 
 ```php
 use CheckVin\Api\Provider\Autocheck\AutocheckDataProvider;
 
 $provider = new AutocheckDataProvider('your-api-key');
-$response = $provider->checkReportExists('1HGBH41JXMN109186');
+$response = $provider->checkReportExists('1FM5K7D85HGB31870');
 
 if ($response->isSuccess()) {
     var_dump($response->getData());
@@ -113,7 +137,7 @@ $provider = new AutocheckDataProvider('your-api-key', $client);
 use CheckVin\Api\Exception\RequestFailed;
 
 try {
-    $response = $provider->checkReportExists('VIN123');
+    $response = $provider->checkReportExists('1FM5K7D85HGB31870');
 } catch (RequestFailed $e) {
     // curl transport error or timeout
     echo $e->getMessage(); // "Request failed (errno N): ..."
@@ -168,7 +192,14 @@ v1.0.0 introduces the following **breaking changes**:
    New: `CheckVin\Api\Provider\Autocheck\AutocheckDataProviderInterface`.
    Update any type hints, `implements` clauses, and `use` statements referencing the old name.
 
-10. **Response class hierarchy collapsed into a single `ApiResponse`.**
+10. **Client-side VIN validation is now enforced before any HTTP request.**
+   Calling any VIN-based endpoint (`getAutoCheckForVinCode`, `checkReportExists`, `getCarfaxForVinCode`, `getInfo`) with an invalid VIN now throws `CheckVin\Api\Exception\InvalidVinCode` (extends `\InvalidArgumentException`) **before** any network call is made.
+   Previously, the raw string was forwarded to the API and validation errors came back as HTTP 4xx responses.
+   The underlying package exception (`LengthNotValidException`, `NotValidLetterException`, or `CheckSumNotValidException` from `checkvin/vincode`) is available via `$e->getPrevious()`.
+   **Only North-American VINs (valid check digit at position 9) are accepted.**
+   A new Composer dependency `checkvin/vincode ^1.0` is required.
+
+11. **Response class hierarchy collapsed into a single `ApiResponse`.**
    Old: `Abstraction\ApiResponse` → `Abstraction\ErrorResponse` / `Abstraction\SuccessResponse` → `Error\ApplicationErrorResponse` / `Success\ApplicationSuccessResponse`, plus `ApiResponseFactory`.
    New: one `final class ApiResponse` at `CheckVin\Api\Http\Response\ApiResponse` with a named constructor `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
    - Replace any `use CheckVin\Api\Http\Response\Abstraction\ApiResponse` with `use CheckVin\Api\Http\Response\ApiResponse`.

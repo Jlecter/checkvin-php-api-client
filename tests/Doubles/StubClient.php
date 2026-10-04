@@ -12,6 +12,7 @@ final class StubClient implements ClientInterface
     private string $lastPath = '';
     private array $lastParams = [];
     private ?ClientResponse $stubbedResponse = null;
+    private bool $requestCalled = false;
 
     public function stubResponse(ClientResponse $response): void
     {
@@ -28,8 +29,14 @@ final class StubClient implements ClientInterface
         return $this->lastParams;
     }
 
+    public function wasRequestCalled(): bool
+    {
+        return $this->requestCalled;
+    }
+
     public function request(string $path, #[\SensitiveParameter] array $params): ClientResponse
     {
+        $this->requestCalled = true;
         $this->lastPath = $path;
         $this->lastParams = $params;
 

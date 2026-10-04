@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 final class VehicleDataProviderTest extends TestCase
 {
     private const API_KEY = 'test-api-key';
-    private const VIN_CODE = '1HGBH41JXMN109186';
+    private const VIN_CODE = '1FM5K7D85HGB31870';
 
     public function testGetInfoSendsCorrectPathAndParams(): void
     {

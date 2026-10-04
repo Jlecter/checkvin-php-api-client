@@ -12,11 +12,11 @@ final class CarfaxDataProvider extends AbstractDataProvider implements CarfaxDat
 {
     public function getCarfaxForVinCode(string $vinCode): ApiResponse
     {
-        return $this->call(ApiUriGlossary::VIN_CARFAX_PATH, [self::QUERY_PARAM_VIN_CODE => $vinCode]);
+        return $this->call(ApiUriGlossary::VIN_CARFAX_PATH, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
     }
 
     public function checkReportExists(string $vinCode): ApiResponse
     {
-        return $this->call(ApiUriGlossary::VIN_CARFAX_REPORT_EXIST_PATH, [self::QUERY_PARAM_VIN_CODE => $vinCode]);
+        return $this->call(ApiUriGlossary::VIN_CARFAX_REPORT_EXIST_PATH, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
     }
 }

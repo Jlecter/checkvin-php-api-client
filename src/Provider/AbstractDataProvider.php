@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace CheckVin\Api\Provider;
 
 use CheckVin\Api\Config\Config;
+use CheckVin\Api\Exception\InvalidVinCode;
 use CheckVin\Api\Http\Client\Client;
 use CheckVin\Api\Http\Client\ClientInterface;
 use CheckVin\Api\Http\Response\ApiResponse;
+use CheckvinVincode\VinCode;
 
 abstract class AbstractDataProvider
 {
@@ -19,6 +21,18 @@ abstract class AbstractDataProvider
     public function __construct(private readonly string $apiKey, ?ClientInterface $client = null)
     {
         $this->client = $client ?? new Client(new Config());
+    }
+
+    /**
+     * @throws InvalidVinCode
+     */
+    protected function vinCode(string $vinCode): string
+    {
+        try {
+            return (string) VinCode::createFromString($vinCode);
+        } catch (\InvalidArgumentException $e) {
+            throw new InvalidVinCode($e->getMessage(), $e->getCode(), $e);
+        }
     }
 
     protected function call(string $path, array $params = []): ApiResponse
