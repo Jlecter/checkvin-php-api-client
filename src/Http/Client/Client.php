@@ -18,7 +18,7 @@ final class Client implements ClientInterface
     {
         $curl = curl_init();
 
-        curl_setopt($curl, CURLOPT_URL, $this->buildRequestUrl($path, $params));
+        curl_setopt($curl, CURLOPT_URL, RequestUrlBuilder::build($this->config->getHost(), $path, $params));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->config->getConnectTimeoutMs());
         curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->config->getTimeoutMs());
@@ -40,8 +40,4 @@ final class Client implements ClientInterface
         return ClientResponse::fromBody($output, $httpCode);
     }
 
-    private function buildRequestUrl(string $path, array $params): string
-    {
-        return RequestUrlBuilder::build($this->config->getHost(), $path, $params);
-    }
 }
