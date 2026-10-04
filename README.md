@@ -103,10 +103,13 @@ v1.0.0 introduces the following **breaking changes**:
 
 1. **PHP >= 8.1 required.** PHP 7.4 and 8.0 are no longer supported.
 
-2. **`Config` constructor is now public and configurable.**
-   Old: `new Config()` — no parameters.
-   New: `new Config(string $host, int $connectTimeoutMs, int $timeoutMs)` — all optional with defaults.
+2. **`Config` constructor now accepts parameters.**
+   Old: `new Config()` — no parameters, uses hard-coded internal defaults.
+   New: `new Config(string $host, int $connectTimeoutMs, int $timeoutMs)` — all optional.
    `Config` is now `final`.
+   Default timeouts changed: connect timeout is now **10 000 ms** (10 s), total timeout is now **60 000 ms** (60 s). Previously there was no total timeout and the curl default connect timeout applied.
+   A trailing slash on `$host` is silently trimmed, so `https://host/` and `https://host` behave identically.
+   `connectTimeoutMs <= 0` or `timeoutMs <= 0` throws `CheckVin\Api\Exception\InvalidConfig` (extends `\InvalidArgumentException`).
 
 3. **All four providers accept an optional `ClientInterface` as second constructor argument.**
    Old: `new AutocheckDataProvider('key')`.
@@ -120,7 +123,7 @@ v1.0.0 introduces the following **breaking changes**:
 
 5. **Malformed / non-JSON response bodies no longer cause a `TypeError`.**
    Old: a curl response that is not a JSON object (HTML error page, empty body, truncated response) caused a `TypeError` (null passed to array parameter) even on HTTP 200.
-   New: those cases return an error `ApiResponse` (`isSuccess() === false`) with the message `"Malformed response body"`.
+   New: those cases return an error `ApiResponse` (`isSuccess() === false`). The error message now includes the HTTP status, e.g. `"Malformed response body (HTTP 200)"`. A 200 response with a non-JSON body is also treated as an error.
 
 6. **`\LogicException` replaced by `CheckVin\Api\Exception\RequestFailed`.**
    Old: curl transport errors threw `\LogicException`.
@@ -129,3 +132,8 @@ v1.0.0 introduces the following **breaking changes**:
 7. **Most concrete classes are now `final`.**
    The following classes cannot be extended: `Config`, `Client`, `ClientResponse`, `Error`, `ApplicationErrorResponse`, `ApplicationSuccessResponse`, `ApiUriGlossary`, `AutocheckDataProvider`, `BalanceDataProvider`, `CarfaxDataProvider`, `VehicleDataProvider`.
    If you were extending any of these, compose instead.
+
+8. **`ClientInterface::makeResponse()` has been removed.**
+   Old: `ClientInterface` had both `request()` and `makeResponse()`.
+   New: `ClientInterface` only has `request()`. Response mapping is handled by `ApiResponseFactory::fromClientResponse(ClientResponse): ApiResponse`.
+   Update custom `ClientInterface` implementations and any direct calls to `$client->makeResponse()`.
