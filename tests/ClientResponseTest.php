@@ -20,6 +20,7 @@ final class ClientResponseTest extends TestCase
         // Assert
         self::assertSame(200, $response->getResponseHttpCode());
         self::assertSame('Report found', $response->getData()['message']);
+        self::assertTrue($response->hasValidBody());
     }
 
     public function testErrorJsonBodyWith400(): void
@@ -34,6 +35,7 @@ final class ClientResponseTest extends TestCase
         self::assertSame(400, $response->getResponseHttpCode());
         self::assertSame('Bad request', $response->getData()['message']);
         self::assertSame(['field' => 'required'], $response->getData()['errors']);
+        self::assertTrue($response->hasValidBody());
     }
 
     public function test404JsonBody(): void
@@ -47,9 +49,10 @@ final class ClientResponseTest extends TestCase
         // Assert
         self::assertSame(404, $response->getResponseHttpCode());
         self::assertSame('Report not found', $response->getData()['message']);
+        self::assertTrue($response->hasValidBody());
     }
 
-    public function testHtmlBodyReturnsMalformed(): void
+    public function testHtmlBodyKeepsRealHttpCode(): void
     {
         // Arrange
         $body = '<html><body>Error page</body></html>';
@@ -58,17 +61,33 @@ final class ClientResponseTest extends TestCase
         $response = ClientResponse::fromBody($body, 200);
 
         // Assert
-        self::assertSame(0, $response->getResponseHttpCode());
-        self::assertSame('Malformed response body', $response->getData()['message']);
+        self::assertSame(200, $response->getResponseHttpCode());
+        self::assertFalse($response->hasValidBody());
+        self::assertSame('Malformed response body (HTTP 200)', $response->getData()['message']);
     }
 
-    public function testEmptyBodyReturnsMalformed(): void
+    public function testEmptyBodyKeepsRealHttpCode(): void
     {
         // Action
-        $response = ClientResponse::fromBody('', 200);
+        $response = ClientResponse::fromBody('', 503);
 
         // Assert
-        self::assertSame(0, $response->getResponseHttpCode());
-        self::assertSame('Malformed response body', $response->getData()['message']);
+        self::assertSame(503, $response->getResponseHttpCode());
+        self::assertFalse($response->hasValidBody());
+        self::assertSame('Malformed response body (HTTP 503)', $response->getData()['message']);
+    }
+
+    public function testMalformedBodyOnNon200PreservesHttpCode(): void
+    {
+        // Arrange
+        $body = 'not json';
+
+        // Action
+        $response = ClientResponse::fromBody($body, 502);
+
+        // Assert
+        self::assertSame(502, $response->getResponseHttpCode());
+        self::assertFalse($response->hasValidBody());
+        self::assertSame('Malformed response body (HTTP 502)', $response->getData()['message']);
     }
 }

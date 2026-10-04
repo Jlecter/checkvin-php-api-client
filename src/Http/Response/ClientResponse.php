@@ -9,6 +9,7 @@ final class ClientResponse
     public function __construct(
         private readonly array $data,
         private readonly int $httpCode,
+        private readonly bool $validBody = true,
     ) {
     }
 
@@ -17,7 +18,11 @@ final class ClientResponse
         $decoded = json_decode($body, true);
 
         if (!is_array($decoded)) {
-            return new self(['message' => 'Malformed response body'], 0);
+            return new self(
+                ['message' => sprintf('Malformed response body (HTTP %d)', $httpCode)],
+                $httpCode,
+                false,
+            );
         }
 
         return new self($decoded, $httpCode);
@@ -31,5 +36,10 @@ final class ClientResponse
     public function getResponseHttpCode(): int
     {
         return $this->httpCode;
+    }
+
+    public function hasValidBody(): bool
+    {
+        return $this->validBody;
     }
 }
