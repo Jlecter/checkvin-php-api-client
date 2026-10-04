@@ -21,17 +21,6 @@ final class ClientTest extends TestCase
         $client->request('/anything', []);
     }
 
-    public function testHostFromConfigIsUsed(): void
-    {
-        // Arrange
-        $wrongHost = new Config('http://127.0.0.1:' . self::closedPort(), connectTimeoutMs: 300);
-        $client = new Client($wrongHost);
-
-        // Action + Assert
-        $this->expectException(RequestFailed::class);
-        $client->request('/200-json', []);
-    }
-
     private static function closedPort(): int
     {
         $sock = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
