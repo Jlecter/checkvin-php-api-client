@@ -8,7 +8,7 @@ use CheckVin\Api\Config\ApiUriGlossary;
 use CheckVin\Api\Http\Response\ApiResponse;
 use CheckVin\Api\Provider\AbstractDataProvider;
 
-final class AutocheckDataProvider extends AbstractDataProvider implements AutoCheckDataProviderInterface
+final class AutocheckDataProvider extends AbstractDataProvider implements AutocheckDataProviderInterface
 {
     public function getAutoCheckForVinCode(string $vinCode): ApiResponse
     {

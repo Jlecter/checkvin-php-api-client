@@ -163,7 +163,12 @@ v1.0.0 introduces the following **breaking changes**:
    New: `ClientInterface` only has `request()`. Response mapping is handled by `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
    Update custom `ClientInterface` implementations and any direct calls to `$client->makeResponse()`.
 
-9. **Response class hierarchy collapsed into a single `ApiResponse`.**
+9. **`AutoCheckDataProviderInterface` renamed to `AutocheckDataProviderInterface`.**
+   Old: `CheckVin\Api\Provider\Autocheck\AutoCheckDataProviderInterface`.
+   New: `CheckVin\Api\Provider\Autocheck\AutocheckDataProviderInterface`.
+   Update any type hints, `implements` clauses, and `use` statements referencing the old name.
+
+10. **Response class hierarchy collapsed into a single `ApiResponse`.**
    Old: `Abstraction\ApiResponse` → `Abstraction\ErrorResponse` / `Abstraction\SuccessResponse` → `Error\ApplicationErrorResponse` / `Success\ApplicationSuccessResponse`, plus `ApiResponseFactory`.
    New: one `final class ApiResponse` at `CheckVin\Api\Http\Response\ApiResponse` with a named constructor `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
    - Replace any `use CheckVin\Api\Http\Response\Abstraction\ApiResponse` with `use CheckVin\Api\Http\Response\ApiResponse`.
