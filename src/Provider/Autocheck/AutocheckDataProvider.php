@@ -12,11 +12,11 @@ final class AutocheckDataProvider extends AbstractDataProvider implements Autoch
 {
     public function getAutoCheckForVinCode(string $vinCode): ApiResponse
     {
-        return $this->call(ApiUriGlossary::VIN_AUTOCHECK_PATH, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
+        return $this->callForVin(ApiUriGlossary::VIN_AUTOCHECK_PATH, $vinCode);
     }
 
     public function checkReportExists(string $vinCode): ApiResponse
     {
-        return $this->call(ApiUriGlossary::VIN_AUTOCHECK_REPORT_EXIST_PATH, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
+        return $this->callForVin(ApiUriGlossary::VIN_AUTOCHECK_REPORT_EXIST_PATH, $vinCode);
     }
 }

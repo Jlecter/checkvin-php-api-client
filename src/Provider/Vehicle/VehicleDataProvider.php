@@ -12,6 +12,6 @@ final class VehicleDataProvider extends AbstractDataProvider implements VehicleD
 {
     public function getInfo(string $vinCode): ApiResponse
     {
-        return $this->call(ApiUriGlossary::VEHICLE_INFO_PATH, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
+        return $this->callForVin(ApiUriGlossary::VEHICLE_INFO_PATH, $vinCode);
     }
 }

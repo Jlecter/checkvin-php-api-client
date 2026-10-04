@@ -14,7 +14,7 @@ use CheckvinVincode\VinCode;
 abstract class AbstractDataProvider
 {
     private const QUERY_PARAM_API_KEY = 'api_key';
-    protected const QUERY_PARAM_VIN_CODE = 'vincode';
+    private const QUERY_PARAM_VIN_CODE = 'vincode';
 
     private readonly ClientInterface $client;
 
@@ -26,7 +26,12 @@ abstract class AbstractDataProvider
     /**
      * @throws InvalidVinCode
      */
-    protected function vinCode(string $vinCode): string
+    protected function callForVin(string $path, string $vinCode): ApiResponse
+    {
+        return $this->call($path, [self::QUERY_PARAM_VIN_CODE => $this->vinCode($vinCode)]);
+    }
+
+    private function vinCode(string $vinCode): string
     {
         try {
             return (string) VinCode::createFromString($vinCode);
