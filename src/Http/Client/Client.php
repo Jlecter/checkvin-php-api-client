@@ -39,5 +39,4 @@ final class Client implements ClientInterface
 
         return ClientResponse::fromBody($output, $httpCode);
     }
-
 }
