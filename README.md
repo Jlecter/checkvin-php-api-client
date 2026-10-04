@@ -130,10 +130,19 @@ v1.0.0 introduces the following **breaking changes**:
    New: they throw `CheckVin\Api\Exception\RequestFailed` (extends `\RuntimeException`, implements `CheckVin\Api\Exception\CheckVinApiException`). Update any `catch (\LogicException $e)` blocks.
 
 7. **Most concrete classes are now `final`.**
-   The following classes cannot be extended: `Config`, `Client`, `ClientResponse`, `Error`, `ApplicationErrorResponse`, `ApplicationSuccessResponse`, `ApiUriGlossary`, `AutocheckDataProvider`, `BalanceDataProvider`, `CarfaxDataProvider`, `VehicleDataProvider`.
+   The following classes cannot be extended: `Config`, `Client`, `ClientResponse`, `Error`, `ApiResponse`, `ApiUriGlossary`, `AutocheckDataProvider`, `BalanceDataProvider`, `CarfaxDataProvider`, `VehicleDataProvider`.
    If you were extending any of these, compose instead.
 
 8. **`ClientInterface::makeResponse()` has been removed.**
    Old: `ClientInterface` had both `request()` and `makeResponse()`.
-   New: `ClientInterface` only has `request()`. Response mapping is handled by `ApiResponseFactory::fromClientResponse(ClientResponse): ApiResponse`.
+   New: `ClientInterface` only has `request()`. Response mapping is handled by `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
    Update custom `ClientInterface` implementations and any direct calls to `$client->makeResponse()`.
+
+9. **Response class hierarchy collapsed into a single `ApiResponse`.**
+   Old: `Abstraction\ApiResponse` → `Abstraction\ErrorResponse` / `Abstraction\SuccessResponse` → `Error\ApplicationErrorResponse` / `Success\ApplicationSuccessResponse`, plus `ApiResponseFactory`.
+   New: one `final class ApiResponse` at `CheckVin\Api\Http\Response\ApiResponse` with a named constructor `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
+   - Replace any `use CheckVin\Api\Http\Response\Abstraction\ApiResponse` with `use CheckVin\Api\Http\Response\ApiResponse`.
+   - Replace `instanceof ErrorResponse` / `instanceof ApplicationErrorResponse` checks with `!$response->isSuccess()`.
+   - Replace `instanceof SuccessResponse` / `instanceof ApplicationSuccessResponse` checks with `$response->isSuccess()`.
+   - Replace `ApiResponseFactory::fromClientResponse(...)` with `ApiResponse::fromClientResponse(...)`.
+   - `SuccessResponse::SUCCESS_CODE` (= 200) has no public replacement; remove references to it.

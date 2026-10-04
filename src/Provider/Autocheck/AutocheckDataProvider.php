@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace CheckVin\Api\Provider\Autocheck;
 
 use CheckVin\Api\Config\ApiUriGlossary;
-use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
+use CheckVin\Api\Http\Response\ApiResponse;
 use CheckVin\Api\Provider\AbstractDataProvider;
 
 final class AutocheckDataProvider extends AbstractDataProvider implements AutoCheckDataProviderInterface

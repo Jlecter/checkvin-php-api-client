@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace CheckVin\Api\Tests\Doubles;
 
 use CheckVin\Api\Http\Client\ClientInterface;
-use CheckVin\Api\Http\Response\Abstraction\SuccessResponse;
 use CheckVin\Api\Http\Response\ClientResponse;
 
 final class StubClient implements ClientInterface
@@ -34,6 +33,6 @@ final class StubClient implements ClientInterface
         $this->lastPath = $path;
         $this->lastParams = $params;
 
-        return $this->stubbedResponse ?? new ClientResponse([], SuccessResponse::SUCCESS_CODE);
+        return $this->stubbedResponse ?? new ClientResponse([], 200);
     }
 }

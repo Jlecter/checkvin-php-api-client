@@ -7,8 +7,7 @@ namespace CheckVin\Api\Provider;
 use CheckVin\Api\Config\Config;
 use CheckVin\Api\Http\Client\Client;
 use CheckVin\Api\Http\Client\ClientInterface;
-use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
-use CheckVin\Api\Http\Response\ApiResponseFactory;
+use CheckVin\Api\Http\Response\ApiResponse;
 
 abstract class AbstractDataProvider
 {
@@ -24,7 +23,7 @@ abstract class AbstractDataProvider
 
     protected function call(string $path, array $params = []): ApiResponse
     {
-        return ApiResponseFactory::fromClientResponse(
+        return ApiResponse::fromClientResponse(
             $this->client->request($path, [self::QUERY_PARAM_API_KEY => $this->apiKey] + $params),
         );
     }

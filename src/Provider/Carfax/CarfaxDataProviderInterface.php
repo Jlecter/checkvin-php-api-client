@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace CheckVin\Api\Provider\Carfax;
 
-use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
+use CheckVin\Api\Http\Response\ApiResponse;
 
 /**
  * Interface CarfaxDataProviderInterface.
