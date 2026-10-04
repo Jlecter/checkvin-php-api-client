@@ -42,6 +42,6 @@ final class Client implements ClientInterface
 
     private function buildRequestUrl(string $path, array $params): string
     {
-        return $this->config->getHost() . $path . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        return RequestUrlBuilder::build($this->config->getHost(), $path, $params);
     }
 }

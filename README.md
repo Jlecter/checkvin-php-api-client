@@ -144,6 +144,51 @@ try {
 }
 ```
 
+ USING YOUR OWN HTTP CLIENT (PSR-18)
+------------
+
+By default the SDK uses its built-in curl client. If you need connection pooling,
+retries, a proxy, or any other transport feature, pass any PSR-18-compatible HTTP
+client to the provider instead.
+
+**Install the adapter and a PSR-7 factory** (only needed by callers that use
+`Psr18Client`; the SDK itself has no runtime dependency on these packages):
+
+```bash
+composer require guzzlehttp/guzzle nyholm/psr7
+```
+
+**Wire it up:**
+
+```php
+use CheckVin\Api\Http\Client\Psr18Client;
+use CheckVin\Api\Provider\Balance\BalanceDataProvider;
+use GuzzleHttp\Client as GuzzleClient;
+use Nyholm\Psr7\Factory\Psr17Factory;
+
+// Guzzle 7 implements PSR-18 natively.
+// GuzzleHttp\Psr7\HttpFactory also works as the request factory
+// (verify the class name against your installed guzzlehttp/psr7 version).
+$guzzle = new GuzzleClient([
+    'connect_timeout' => 1,   // seconds
+    'timeout'         => 10,
+]);
+
+$factory = new Psr17Factory(); // nyholm/psr7 — implements RequestFactoryInterface
+
+$client = new Psr18Client($guzzle, $factory);
+
+$provider = new BalanceDataProvider('your-api-key', $client);
+$response = $provider->getBalance();
+```
+
+**Note:** timeouts, retries, and proxy settings must be configured on the
+PSR-18 client directly. `Psr18Client` does not apply any timeouts of its own.
+
+Transport errors thrown by the PSR-18 client (`Psr\Http\Client\ClientExceptionInterface`)
+are mapped to `CheckVin\Api\Exception\RequestFailed`, with the original exception
+available via `getPrevious()`.
+
  UPGRADING FROM 0.x
 ------------
 

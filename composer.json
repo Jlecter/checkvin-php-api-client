@@ -15,7 +15,14 @@
         "checkvin/vincode": "^1.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.5"
+        "phpunit/phpunit": "^10.5",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.1",
+        "nyholm/psr7": "^1.8"
+    },
+    "suggest": {
+        "psr/http-client": "Required to use Psr18Client — plug in Guzzle, Symfony HttpClient, or any PSR-18 implementation",
+        "psr/http-factory": "Required to use Psr18Client — provides the RequestFactoryInterface for building PSR-7 requests"
     },
     "autoload": {
         "psr-4": {

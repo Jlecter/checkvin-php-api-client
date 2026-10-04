@@ -8,12 +8,14 @@ use CheckVin\Api\Exception\InvalidConfig;
 
 final class Config
 {
+    public const DEFAULT_HOST = 'https://apicheckvin.xyz';
+
     private readonly string $host;
     private readonly int $connectTimeoutMs;
     private readonly int $timeoutMs;
 
     public function __construct(
-        string $host = 'https://apicheckvin.xyz',
+        string $host = self::DEFAULT_HOST,
         int $connectTimeoutMs = 10000,
         int $timeoutMs = 60000,
     ) {
