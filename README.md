@@ -16,7 +16,7 @@ CONTENTS OF THIS FILE
 - **17.03.2023** - published version (<b>v0.1.0</b>) - added an ability to work with AutoCheck, Balance, Carfax.
 - **16.08.2023** - published version (<b>v0.2.0</b>) - fixed curl close bug.
 - **21.01.2024** - published version (<b>v0.3.0</b>) - added VehicleProvider.
-- **2026-10-03** - published version (<b>v1.0.0</b>) - PHP 8.1+, configurable timeouts, client injection, malformed-body safety, dedicated exception, full test suite, `CheckVin` facade entry-point. See **Upgrading from 0.x** for breaking changes.
+- **2026-10-05** - published version (<b>v1.0.1</b>) - PHP 8.1+, configurable timeouts, client injection, malformed-body safety, dedicated exception, full test suite, `CheckVin` facade entry-point. See **Upgrading from 0.x** for breaking changes. v1.0.0 was withdrawn (it was published from the wrong commit) — use `^1.0.1`.
  
   DESCRIPTION
 ------------
@@ -34,7 +34,7 @@ CheckVin API client is a package for a convenient working with <a href="https://
  INSTALLATION
 ------------
 
-Run: composer require jlecter/checkvin-php-api-client
+Run: composer require jlecter/checkvin-php-api-client:^1.0.1
 
  USAGE
 ------------
@@ -250,7 +250,7 @@ available via `getPrevious()`.
  UPGRADING FROM 0.x
 ------------
 
-v1.0.0 introduces the following **breaking changes**:
+1.0 introduces the following **breaking changes**:
 
 1. **PHP >= 8.1 required.** PHP 7.4 and 8.0 are no longer supported.
 
@@ -276,7 +276,7 @@ v1.0.0 introduces the following **breaking changes**:
 5. **Malformed / non-JSON response bodies no longer cause a `TypeError`.**
    Old: a curl response that is not a JSON object (HTML error page, empty body, truncated response) caused a `TypeError` (null passed to array parameter) even on HTTP 200.
    New: those cases return an error `ApiResponse` (`isSuccess() === false`). The error message now includes the HTTP status, e.g. `"Malformed response body (HTTP 200)"`. A 200 response with a non-JSON body is also treated as an error.
-   **v1.0.0 also treats a JSON list (e.g. `[1,2,3]`) as a malformed body** — the API contract requires a JSON object. Empty arrays (`[]` / `{}`) remain valid.
+   **1.0 also treats a JSON list (e.g. `[1,2,3]`, `[]`) as a malformed body** — the API contract requires a JSON object. An empty object `{}` remains valid.
 
 6. **`\LogicException` replaced by `CheckVin\Api\Exception\RequestFailed`.**
    Old: curl transport errors threw `\LogicException`.
