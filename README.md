@@ -57,6 +57,7 @@ Run: composer require jlecter/checkvin-php-api-client
 - `getHttpCode(): int` — the real HTTP status code from the response
 - `getErrors(): array` — raw `errors` payload if the API returned an array, otherwise `[]`
 - `isMalformedBody(): bool` — `true` when the response body was not a JSON object (e.g. HTML error page, JSON list, empty body)
+- `getData(): array` — full decoded response body for the error; `[]` when the body was malformed. Useful for 404 responses with a meaningful body, e.g. `checkReportExists` on carfax returns `{"message":"Report not found","preset_link":"","checked":false}` — access `$error->getData()['checked']` to read that field.
 
 **VIN validation (client-side, before any HTTP request):**
 

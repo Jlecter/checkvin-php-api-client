@@ -13,6 +13,7 @@ final class Error
         private readonly int $httpCode,
         private readonly array $errors,
         private readonly bool $malformedBody,
+        private readonly array $rawData,
     ) {
     }
 
@@ -26,6 +27,7 @@ final class Error
             $clientResponse->getResponseHttpCode(),
             $errors,
             !$clientResponse->hasValidBody(),
+            $clientResponse->hasValidBody() ? $data : [],
         );
     }
 
@@ -47,6 +49,11 @@ final class Error
     public function isMalformedBody(): bool
     {
         return $this->malformedBody;
+    }
+
+    public function getData(): array
+    {
+        return $this->rawData;
     }
 
     private static function normalizeErrors(mixed $raw): array

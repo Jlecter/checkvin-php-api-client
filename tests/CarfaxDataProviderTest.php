@@ -75,4 +75,21 @@ final class CarfaxDataProviderTest extends TestCase
         self::assertFalse($response->isSuccess());
         self::assertSame('Report not found', $response->getError()->getMessage());
     }
+
+    public function testCheckReportExists404BodyPreservesCheckedField(): void
+    {
+        // Arrange
+        $stub = new StubClient();
+        $stub->stubResponse(new ClientResponse(
+            ['message' => 'Report not found', 'preset_link' => '', 'checked' => false],
+            404,
+        ));
+        $provider = new CarfaxDataProvider(self::API_KEY, $stub);
+
+        // Action
+        $response = $provider->checkReportExists(self::VIN_CODE);
+
+        // Assert
+        self::assertFalse($response->getError()->getData()['checked']);
+    }
 }

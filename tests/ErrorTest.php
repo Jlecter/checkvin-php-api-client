@@ -213,4 +213,42 @@ final class ErrorTest extends TestCase
         // Assert
         self::assertFalse($error->isMalformedBody());
     }
+
+    public function testGetDataReturns404BodyWithCheckedAndPresetLink(): void
+    {
+        // Arrange
+        $body     = ['message' => 'Report not found', 'preset_link' => '', 'checked' => false];
+        $response = new ClientResponse($body, 404);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame($body, $error->getData());
+    }
+
+    public function testGetDataReturns422BodyIncludingMessageAndErrors(): void
+    {
+        // Arrange
+        $body     = ['message' => 'Validation failed', 'errors' => ['vin' => 'invalid']];
+        $response = new ClientResponse($body, 422);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame($body, $error->getData());
+    }
+
+    public function testGetDataReturnsEmptyArrayForMalformedBody(): void
+    {
+        // Arrange
+        $response = ClientResponse::fromBody('not json', 502);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame([], $error->getData());
+    }
 }
