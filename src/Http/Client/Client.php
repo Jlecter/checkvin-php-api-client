@@ -5,49 +5,42 @@ declare(strict_types=1);
 namespace CheckVin\Api\Http\Client;
 
 use CheckVin\Api\Config\Config;
-use CheckVin\Api\Http\Response\Abstraction\ApiResponse;
+use CheckVin\Api\Exception\RequestFailed;
 use CheckVin\Api\Http\Response\ClientResponse;
-use CheckVin\Api\Http\Response\Error\ApplicationErrorResponse;
-use CheckVin\Api\Http\Response\Success\ApplicationSuccessResponse;
 
-class Client implements ClientInterface
+final class Client implements ClientInterface
 {
-    private Config $config;
-    
-    public function __construct(Config $config)
+    public function __construct(private readonly Config $config)
     {
-        $this->config = $config;
     }
-    
-    public function request(string $path, array $params): ClientResponse
+
+    public function request(string $path, #[\SensitiveParameter] array $params): ClientResponse
     {
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $this->buildRequestUrl($path, $params));
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    
-        $output = curl_exec($curl);
-        if (curl_errno($curl)) {
-            curl_close($curl);
-            throw new \LogicException('Request failed. Message: '. curl_error($curl));
-        }
-    
-        $response = new ClientResponse(json_decode($output, true), curl_getinfo($curl)['http_code']);
-        curl_close($curl);
 
-        return $response;
-    }
-    
-    public function makeResponse(ClientResponse $clientResponse): ApiResponse
-    {
-        if ($clientResponse->getResponseHttpCode() !== ApplicationSuccessResponse::SUCCESS_CODE) {
-            return new ApplicationErrorResponse($clientResponse);
+        if ($curl === false) {
+            throw new RequestFailed('Failed to initialize curl');
         }
-        
-        return new ApplicationSuccessResponse($clientResponse);
-    }
-    
-    private function buildRequestUrl(string $path, array $params): string
-    {
-        return $this->config->getHost() . $path . '?' . http_build_query($params);
+
+        curl_setopt($curl, CURLOPT_URL, RequestUrlBuilder::build($this->config->getHost(), $path, $params));
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->config->getConnectTimeoutMs());
+        curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->config->getTimeoutMs());
+        curl_setopt($curl, CURLOPT_NOSIGNAL, 1);
+
+        $output = curl_exec($curl);
+
+        if ($output === false) {
+            $errno = curl_errno($curl);
+            $error = curl_error($curl);
+            throw new RequestFailed(
+                sprintf('Request failed (errno %d): %s', $errno, $error),
+                $errno,
+            );
+        }
+
+        $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        return ClientResponse::fromBody($output, $httpCode);
     }
 }

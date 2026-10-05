@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace CheckVin\Api\Config;
 
-/**
- * Class ApiUriGlossary.
- */
-class ApiUriGlossary
+final class ApiUriGlossary
 {
     public const VIN_AUTOCHECK_PATH = '/api/v1/autocheck';
     public const VIN_AUTOCHECK_REPORT_EXIST_PATH = '/api/v1/autocheck/check';
