@@ -51,7 +51,7 @@ final class ErrorTest extends TestCase
         self::assertSame('', $error->getMessage());
     }
 
-    public function testNonScalarMessageDegradesGracefully(): void
+    public function testArrayMessageIsFlattenedRecursively(): void
     {
         // Arrange
         $response = new ClientResponse(['message' => ['nested' => 'array']], 500);
@@ -60,19 +60,35 @@ final class ErrorTest extends TestCase
         $error = Error::fromClientResponse($response);
 
         // Assert
-        self::assertSame('', $error->getMessage());
+        self::assertSame('array', $error->getMessage());
     }
 
-    public function testNonArrayErrorsKeyIsIgnored(): void
+    public function testArrayMessageCombinedWithErrors(): void
     {
         // Arrange
+        $response = new ClientResponse([
+            'message' => ['title' => 'Validation failed'],
+            'errors'  => ['email' => 'invalid'],
+        ], 422);
+
+        // Action
+        $error = Error::fromClientResponse($response);
+
+        // Assert
+        self::assertSame('Validation failed invalid', $error->getMessage());
+    }
+
+    public function testScalarStringErrorsNormalisedToList(): void
+    {
+        // Arrange — API occasionally returns errors as a plain string instead of an object
         $response = new ClientResponse(['message' => 'Oops', 'errors' => 'not-an-array'], 400);
 
         // Action
         $error = Error::fromClientResponse($response);
 
         // Assert
-        self::assertSame('Oops', $error->getMessage());
+        self::assertSame(['not-an-array'], $error->getErrors());
+        self::assertSame('Oops not-an-array', $error->getMessage());
     }
 
     public function testOnlyErrorsWithoutMessageHasNoLeadingSpace(): void
@@ -162,10 +178,10 @@ final class ErrorTest extends TestCase
         self::assertSame([], $error->getErrors());
     }
 
-    public function testGetErrorsReturnsEmptyArrayWhenErrorsIsNotAnArray(): void
+    public function testGetErrorsReturnsEmptyArrayWhenErrorsIsNonPrintableScalar(): void
     {
-        // Arrange
-        $response = new ClientResponse(['message' => 'Oops', 'errors' => 'not-an-array'], 400);
+        // Arrange — bools and null are not printable scalars; errors must be []
+        $response = new ClientResponse(['message' => 'Oops', 'errors' => true], 400);
 
         // Action
         $error = Error::fromClientResponse($response);

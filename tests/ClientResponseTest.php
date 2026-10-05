@@ -104,18 +104,43 @@ final class ClientResponseTest extends TestCase
         self::assertSame('Malformed response body (HTTP 200)', $response->getData()['message']);
     }
 
-    public function testEmptyJsonArrayIsValidBody(): void
+    public function testEmptyJsonArrayIsMalformed(): void
     {
-        // Arrange — `[]` is the PHP equivalent of both `{}` and `[]` after json_decode;
-        //            an empty response is treated as valid (no data, no error)
+        // Arrange — JSON arrays are not valid API responses; only JSON objects are
         $body = '[]';
 
         // Action
         $response = ClientResponse::fromBody($body, 200);
 
         // Assert
+        self::assertFalse($response->hasValidBody());
+        self::assertSame('Malformed response body (HTTP 200)', $response->getData()['message']);
+    }
+
+    public function testJsonObjectWithIntegerKeysIsValid(): void
+    {
+        // Arrange — {"0":"a","1":"b"} is a JSON object even though keys look like array indices
+        $body = '{"0":"a","1":"b"}';
+
+        // Action
+        $response = ClientResponse::fromBody($body, 200);
+
+        // Assert
         self::assertTrue($response->hasValidBody());
-        self::assertSame([], $response->getData());
+        self::assertSame(['a', 'b'], $response->getData());
+    }
+
+    public function testLeadingWhitespaceBeforeObjectIsValid(): void
+    {
+        // Arrange
+        $body = "  \t\n{\"message\":\"ok\"}";
+
+        // Action
+        $response = ClientResponse::fromBody($body, 200);
+
+        // Assert
+        self::assertTrue($response->hasValidBody());
+        self::assertSame('ok', $response->getData()['message']);
     }
 
     public function testEmptyJsonObjectIsValidBody(): void

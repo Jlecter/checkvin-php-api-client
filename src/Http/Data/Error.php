@@ -19,7 +19,7 @@ final class Error
     public static function fromClientResponse(ClientResponse $clientResponse): self
     {
         $data = $clientResponse->getData();
-        $errors = is_array($data['errors'] ?? null) ? $data['errors'] : [];
+        $errors = self::normalizeErrors($data['errors'] ?? null);
 
         return new self(
             self::buildMessage($data['message'] ?? null, $errors),
@@ -49,12 +49,31 @@ final class Error
         return $this->malformedBody;
     }
 
+    private static function normalizeErrors(mixed $raw): array
+    {
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        if (self::isPrintableScalar($raw)) {
+            return [$raw];
+        }
+
+        return [];
+    }
+
     private static function buildMessage(mixed $message, array $errors): string
     {
         $parts = [];
 
         if (self::isPrintableScalar($message)) {
             $parts[] = (string) $message;
+        } elseif (is_array($message)) {
+            array_walk_recursive($message, function (mixed $value) use (&$parts): void {
+                if (self::isPrintableScalar($value)) {
+                    $parts[] = (string) $value;
+                }
+            });
         }
 
         array_walk_recursive($errors, function (mixed $value) use (&$parts): void {

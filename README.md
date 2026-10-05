@@ -272,10 +272,9 @@ v1.0.0 introduces the following **breaking changes**:
    A new Composer dependency `checkvin/vincode ^1.0` is required.
 
 11. **Response class hierarchy collapsed into a single `ApiResponse`.**
-   Old: `Abstraction\ApiResponse` → `Abstraction\ErrorResponse` / `Abstraction\SuccessResponse` → `Error\ApplicationErrorResponse` / `Success\ApplicationSuccessResponse`, plus `ApiResponseFactory`.
+   Old: `Abstraction\ApiResponse` → `Abstraction\ErrorResponse` / `Abstraction\SuccessResponse` → `Error\ApplicationErrorResponse` / `Success\ApplicationSuccessResponse`.
    New: one `final class ApiResponse` at `CheckVin\Api\Http\Response\ApiResponse` with a named constructor `ApiResponse::fromClientResponse(ClientResponse): ApiResponse`.
    - Replace any `use CheckVin\Api\Http\Response\Abstraction\ApiResponse` with `use CheckVin\Api\Http\Response\ApiResponse`.
    - Replace `instanceof ErrorResponse` / `instanceof ApplicationErrorResponse` checks with `!$response->isSuccess()`.
    - Replace `instanceof SuccessResponse` / `instanceof ApplicationSuccessResponse` checks with `$response->isSuccess()`.
-   - Replace `ApiResponseFactory::fromClientResponse(...)` with `ApiResponse::fromClientResponse(...)`.
    - `SuccessResponse::SUCCESS_CODE` (= 200) has no public replacement; remove references to it.

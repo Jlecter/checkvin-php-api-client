@@ -18,6 +18,10 @@ final class Client implements ClientInterface
     {
         $curl = curl_init();
 
+        if ($curl === false) {
+            throw new RequestFailed('Failed to initialize curl');
+        }
+
         curl_setopt($curl, CURLOPT_URL, RequestUrlBuilder::build($this->config->getHost(), $path, $params));
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->config->getConnectTimeoutMs());

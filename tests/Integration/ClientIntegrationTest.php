@@ -48,6 +48,16 @@ final class ClientIntegrationTest extends TestCase
         }
     }
 
+    public function testConnectionRefusedThrowsRequestFailed(): void
+    {
+        // Arrange
+        $client = new Client(new Config('http://127.0.0.1:' . self::closedPort(), connectTimeoutMs: 300));
+
+        // Action + Assert
+        $this->expectException(RequestFailed::class);
+        $client->request('/anything', []);
+    }
+
     public function testSlowEndpointThrowsRequestFailed(): void
     {
         // Arrange — 300 ms total timeout, server sleeps 1 s; connect timeout must be ≤ total
@@ -76,6 +86,20 @@ final class ClientIntegrationTest extends TestCase
     private function baseUrl(): string
     {
         return sprintf('http://127.0.0.1:%d', self::$port);
+    }
+
+    private static function closedPort(): int
+    {
+        $sock = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+
+        if ($sock === false) {
+            throw new \RuntimeException(sprintf('Cannot bind ephemeral port: %s', $errstr));
+        }
+
+        $name = stream_socket_get_name($sock, false);
+        fclose($sock);
+
+        return (int) substr($name, strrpos($name, ':') + 1);
     }
 
     private static function findFreePort(): int
