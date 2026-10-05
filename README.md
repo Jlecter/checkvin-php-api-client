@@ -57,7 +57,7 @@ Run: composer require jlecter/checkvin-php-api-client
 - `getHttpCode(): int` — the real HTTP status code from the response
 - `getErrors(): array` — raw `errors` payload if the API returned an array, otherwise `[]`
 - `isMalformedBody(): bool` — `true` when the response body was not a JSON object (e.g. HTML error page, JSON list, empty body)
-- `getData(): array` — full decoded response body for the error; `[]` when the body was malformed. Useful for 404 responses with a meaningful body, e.g. `checkReportExists` on carfax returns `{"message":"Report not found","preset_link":"","checked":false}` — access `$error->getData()['checked']` to read that field.
+- `getData(): array` — full decoded response body for the error; `[]` when the body was malformed. Useful for 404 responses with a meaningful body, e.g. `checkReportExists` returns `{"message":"Report not found","preset_link":"","checked":true}` — access `$error->getData()['preset_link']` to read that field.
 
 **VIN validation (client-side, before any HTTP request):**
 
@@ -80,7 +80,7 @@ try {
 }
 ```
 
-**Note:** only North-American VINs (with a valid check digit) are accepted. Non-North-American VINs (European, Asian, etc.) will be rejected at this stage.
+**Note:** report endpoints (`getAutoCheckForVinCode`, `checkReportExists`, `getCarfaxForVinCode`) only accept North-American VINs (WMI starting with 1–5). A non-North-American VIN that happens to pass the check-digit may be accepted client-side but will be rejected by the API with HTTP 422 `"Vincode Invalid. Auto not from North America."`. The `vehicle/info` endpoint (`getInfo`) is less strict server-side — non-NA VINs were accepted in testing — but client-side validation still requires a valid checksum.
 
 **Basic usage — `CheckVin` facade (recommended):**
 
@@ -103,7 +103,10 @@ if ($response->isSuccess()) {
     if ($error->isMalformedBody()) {
         // Transport / gateway problem — no API error payload
         echo 'Unexpected response, HTTP ' . $error->getHttpCode();
-    } elseif ($error->getHttpCode() === 401) {
+    } elseif ($error->getHttpCode() === 422 && $error->getMessage() === 'Пользователь не найден') {
+        // Invalid API key — the server returns HTTP 422, not 401/403.
+        // It cannot be distinguished from a validation error by status code alone;
+        // check getMessage() for the exact string when you need to tell them apart.
         echo 'Invalid API key';
     } elseif ($error->getHttpCode() === 404) {
         echo 'Report not found';
@@ -170,6 +173,34 @@ try {
     echo $e->getMessage(); // "Request failed (errno N): ..."
 }
 ```
+
+ API BEHAVIOUR NOTES
+------------
+
+**Balance:** `getData()['message']` is a number (float), not a string. For example: `12.6`.
+
+**Invalid API key:** the server responds with HTTP 422 (not 401/403) and `{"message":"Пользователь не найден"}`. This status is identical to a validation error; distinguish by the message text when necessary.
+
+**Validation errors (422):** follow Laravel format. `getErrors()` returns an object where each key is a field name and the value is an array of messages:
+```php
+// ["vincode" => ["The vincode must be at least 17 characters."]]
+$error->getErrors();
+```
+
+**`checkReportExists` (carfax and autocheck):**
+- HTTP 200 → report found; `getData()['preset_link']` contains the view URL.
+- HTTP 404 → report not found; `isSuccess()` is `false`. Use `getError()->getData()` to read the full body, including `preset_link` (empty string).
+- For carfax, the body contains `"checked": true` in **both** cases. This means the lookup ran — it does **not** indicate that a report exists. Always use `isSuccess()` (or `getError()->getHttpCode()`) to determine whether a report was found.
+
+**Rate limit:** 60 requests per minute. The server sends `X-Ratelimit-Limit` and `X-Ratelimit-Remaining` headers, but these are not exposed by the client; handle HTTP 429 via `getError()->getHttpCode()`.
+
+**Full report response shapes:**
+
+*Autocheck* (`getAutoCheckForVinCode`): `vin` (decoded as `[]` — server quirk, returns `{}` instead of a VIN string), `has_autocheck` (bool), `updated_at` (ISO 8601 datetime string), `autocheck_data` (HTML string), `link` (string).
+
+*Carfax* (`getCarfaxForVinCode`): `vin` (string), `hash` (string), `has_carfax` (bool), `updated_at` (**`"HH:MM:SS DD-MM-YYYY"` format** — different from autocheck's ISO 8601), `carfax_data` (HTML string), `link` (string, may contain a double slash in the path — server quirk).
+
+*Vehicle info* (`getInfo`): `data` → `{brand, model, vin, year (int), engine_fuel, engine_hp (int)}`.
 
  USING YOUR OWN HTTP CLIENT (PSR-18)
 ------------
